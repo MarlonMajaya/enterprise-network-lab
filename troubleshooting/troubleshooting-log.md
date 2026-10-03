@@ -185,14 +185,3 @@ show port-security interface fastEthernet0/1
 
 ---
 
-## Lessons Learned
-
-This section will be completed after the lab is fully built.
-
-Topics to document include:
-
-* Problems that took the longest to troubleshoot
-* Commands that were useful during troubleshooting
-* Configuration mistakes that were made
-* What was learned from each problem
-* What could be configured differently in a future version of the lab
