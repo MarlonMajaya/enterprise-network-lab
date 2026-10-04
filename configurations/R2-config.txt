@@ -1,0 +1,83 @@
+! R2 - internal router, router-on-a-stick for inter-VLAN routing
+! Also the DHCP server for Users/Servers/Guest VLANs
+
+hostname R2
+ip domain-name marlonlab.local
+
+enable secret <REDACTED>
+
+username admin privilege 15 secret <REDACTED>
+
+! Link to R1
+interface g0/1
+ description Link-to-R1
+ ip address 10.0.0.2 255.255.255.252
+ no shutdown
+
+! Trunk link to SW1/SW2 (physical parent interface)
+interface g0/0
+ no shutdown
+
+interface g0/0.10
+ description Management-VLAN
+ encapsulation dot1Q 10
+ ip address 192.168.10.1 255.255.255.0
+
+interface g0/0.20
+ description Users-VLAN
+ encapsulation dot1Q 20
+ ip address 192.168.20.1 255.255.255.0
+
+interface g0/0.30
+ description Servers-VLAN
+ encapsulation dot1Q 30
+ ip address 192.168.30.1 255.255.255.0
+
+interface g0/0.40
+ description Guest-VLAN
+ encapsulation dot1Q 40
+ ip address 192.168.40.1 255.255.255.0
+ ip access-group 100 in
+
+! OSPF
+router ospf 1
+ router-id 2.2.2.2
+ network 10.0.0.0 0.0.0.3 area 0
+ network 192.168.10.0 0.0.0.255 area 0
+ network 192.168.20.0 0.0.0.255 area 0
+ network 192.168.30.0 0.0.0.255 area 0
+ network 192.168.40.0 0.0.0.255 area 0
+
+! DHCP pools
+ip dhcp excluded-address 192.168.20.1 192.168.20.10
+ip dhcp excluded-address 192.168.30.1 192.168.30.10
+ip dhcp excluded-address 192.168.40.1 192.168.40.10
+
+ip dhcp pool USERS
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ dns-server 8.8.8.8
+
+ip dhcp pool SERVERS
+ network 192.168.30.0 255.255.255.0
+ default-router 192.168.30.1
+ dns-server 8.8.8.8
+
+ip dhcp pool GUEST
+ network 192.168.40.0 255.255.255.0
+ default-router 192.168.40.1
+ dns-server 8.8.8.8
+
+! ACL: Guest VLAN cannot reach Servers VLAN, everything else permitted
+access-list 100 deny ip 192.168.40.0 0.0.0.255 192.168.30.0 0.0.0.255
+access-list 100 permit ip any any
+
+! SSH access
+crypto key generate rsa modulus 2048
+ip ssh version 2
+
+line vty 0 4
+ login local
+ transport input ssh
+
+service password-encryption
