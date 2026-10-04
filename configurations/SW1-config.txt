@@ -1,0 +1,80 @@
+! SW1 - access + distribution switch, EtherChannel to SW2
+
+hostname SW1
+ip domain-name marlonlab.local
+
+enable secret <REDACTED>
+username admin privilege 15 secret <REDACTED>
+
+vlan 10
+ name MANAGEMENT
+vlan 20
+ name USERS
+vlan 30
+ name SERVERS
+vlan 40
+ name GUEST
+vlan 99
+ name NATIVE
+
+! Access ports
+interface fa0/1
+ description PC1-Users
+ switchport mode access
+ switchport access vlan 20
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ ip dhcp snooping limit rate 10
+
+interface fa0/2
+ description PC2-Servers
+ switchport mode access
+ switchport access vlan 30
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ ip dhcp snooping limit rate 10
+
+! EtherChannel to SW2 (2 physical links -> port-channel 1)
+interface range gigabitEthernet0/1-2
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 99
+ channel-group 1 mode active
+
+interface port-channel 1
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 99
+
+! Uplink to R2 (trunk, trusted for DHCP snooping/ARP inspection)
+interface gigabitEthernet0/3
+ description Uplink-to-R2
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk native vlan 99
+ ip dhcp snooping trust
+ ip arp inspection trust
+
+! DHCP snooping / Dynamic ARP Inspection
+ip dhcp snooping
+ip dhcp snooping vlan 10,20,30,40
+ip arp inspection vlan 10,20,30,40
+
+! Management interface
+interface vlan 10
+ ip address 192.168.10.2 255.255.255.0
+ no shutdown
+ip default-gateway 192.168.10.1
+
+! SSH access
+crypto key generate rsa modulus 2048
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+
+service password-encryption
