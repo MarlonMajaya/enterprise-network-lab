@@ -1,0 +1,21 @@
+! Standalone reference for the ACL used on R2 (also embedded in router2-config.txt)
+!
+! Requirement: Guest VLAN (40) must not reach Servers VLAN (30).
+! Everything else is permitted (implicit/explicit permit any any at the end).
+
+access-list 100 deny ip 192.168.40.0 0.0.0.255 192.168.30.0 0.0.0.255
+access-list 100 permit ip any any
+
+! Applied inbound on the Guest sub-interface so traffic is filtered
+! as soon as it enters the router from the Guest VLAN:
+interface g0/0.40
+ ip access-group 100 in
+
+! Verification commands:
+!   show access-lists
+!   show ip interface g0/0.40   (confirms ACL is applied)
+!
+! Test procedure:
+!   1. From a Guest VLAN host, ping a Servers VLAN host -> should time out
+!   2. From a Guest VLAN host, ping/browse to an external/Internet address -> should succeed
+!   3. From a Users VLAN host, ping a Servers VLAN host -> should succeed (not restricted)
