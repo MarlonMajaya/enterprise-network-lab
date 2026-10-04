@@ -1,0 +1,1 @@
+Add your screenshots here following the naming convention listed in the main README (01-topology.png, 02-vlan-config.png, etc.). This folder is a placeholder until real screenshots from your build are added.
